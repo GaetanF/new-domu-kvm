@@ -1,0 +1,794 @@
+#! /bin/bash
+
+#######################################################
+###	Define variable system
+base="/usr/share/citic-new-domu-kvm"
+fldDisk="$base/template/disks"
+
+typeOfLinux="debian"
+distrib="lenny"
+verbose=0
+luks=0
+model="standard"
+disk="$fldDisk/standard.disk"
+urlRepo="http://repository.citic74.net/debian/"
+urlSqueeze="http://mirror.switch.ch/ftp/mirror/debian/"
+urlUbuntu="http://mirror.switch.ch/ftp/mirror/ubuntu/"
+
+grub_1="lenny etch"
+grub_2="squeeze lucid"
+
+isGrub1=0
+isGrub2=0
+
+#######################################################
+usage()
+{
+cat << EOF
+usage: $0 [-t <linux>] [-d <distribname>] [-m <model>] [-v] [-c] <name_domU>
+
+This script install a new domU.
+
+OPTIONS:
+   -h|--help        Show this message
+   -t               Type of Linux : debian. Default: debian
+   -d               Type of Distribution : lenny. Default: lenny
+   -m               Model (List available rion folder : /usr/share/citic-new-domu-kvm/template/disks/ )
+                ca : 
+                        /               3G ext4
+                        /boot           300M ext2
+                        /var            100% of free ext4
+                www :
+                        /               3G ext4
+                        /boot           300M ext2
+                        /var            3G ext4
+                        /var/www        100% of free ext4
+                mail : 
+                        /               3G ext4
+                        /boot           300M ext2
+                        /home           100% of free ext4
+      (default) standard :
+                        /               3G ext4
+                        /boot           300M ext2
+                        /var            100% of free ext4
+
+   -c|--crypt	    Add LUKS Crypt on the disk		
+   -v|--verb        Verbose
+EOF
+}
+
+function grubTest {
+    test="$1"
+
+    echo "$grub_1" | grep "$test" > /dev/null
+    returnGrub1=$?
+    echo "$grub_2" | grep "$test" > /dev/null
+    returnGrub2=$?
+    if [ $returnGrub1 -eq 0 ]
+    then
+        isGrub1=1
+        isGrub2=0
+    elif [ $returnGrub2 -eq 0 ]
+    then
+        isGrub1=0
+        isGrub2=1
+    else
+        isGrub1=0
+        isGrub2=0
+    fi
+
+}
+
+while getopts "hvcm:t:d:f:-:" OPTION
+do
+    if [ "$OPTION" = "-" ]
+    then
+        case $OPTARG in
+            help)  
+                OPTION="h"
+            ;;
+	    crypt)
+		OPTION="c"
+	    ;;
+            verb)  
+                OPTION="v" 
+            ;;
+        esac
+    fi
+    case $OPTION in
+        h)
+            usage
+            exit 1
+            ;;
+        t)
+            echo "$OPTARG" | egrep -i '^ubuntu$' > /dev/null
+            if [ $? -eq 0 ]
+            then
+                typeOfLinux="ubuntu"
+            else
+                echo "$OPTARG" | egrep -i '^debian$' > /dev/null
+		if [ $? -ne 0 ]
+		then
+		    echo "Type of Linux not valid, use debian"
+                fi
+                typeOfLinux="debian"
+            fi
+            ;;
+        d)
+            echo "$OPTARG" | egrep -i '^(lenny|lucid|squeeze)$' > /dev/null
+            if [ $? -eq 0 ]
+            then
+                distrib=`echo $OPTARG | tr "[:upper:]" "[:lower:]"`
+            else
+                echo "Distribution not valid, use lenny"
+            fi
+            ;;
+        f)
+            ls /dev/mapper/ | egrep "^($OPTARG-1)$" > /dev/null
+            if [ $? -eq 1 ]
+            then
+                domu="$OPTARG"
+            else
+                echo "Name of vdisk domU not valid. Not exist in /dev/mapper"
+                exit 2
+            fi
+            ;;
+        m)
+            if [ "$OPTARG" = "ca" ]
+            then
+                model="ca"
+                disk="$fldDisk/ca.disk"
+		fstab="$fldDisk/ca.fstab"
+            elif [ "$OPTARG" = "www" ]
+            then
+                model="www"
+                disk="$fldDisk/www.disk"
+		fstab="$fldDisk/www.fstab"
+            elif [ "$OPTARG" = "mail" ]
+            then
+                model="mail"
+                disk="$fldDisk/mail.disk"
+		fstab="$fldDisk/mail.fstab"
+            else
+		ls $fldDisk/ | grep -q $OPTARG
+		if [ $? -eq 0 ]
+		then
+			model="$OPTARG"
+			disk="$fldDisk/$model.disk"
+			fstab="$fldDisk//$model.fstab"
+		else    
+                	model="standard"
+                	disk="$fldDisk/standard.disk"
+			fstab="$fldDisk/standard.fstab"
+		fi
+            fi
+            ;;
+        v)
+            verbose=1
+            ;;
+        c)
+ 	    luks=1
+	    ;;
+	?|:)
+            usage
+            exit
+            ;;
+    esac
+done
+
+if [[ -z $typeOfLinux ]] || [[ -z $distrib ]] 
+then
+     usage
+     exit 1
+fi
+
+grubTest $distrib
+
+if [ "$distrib" = "squeeze" ]
+then
+	urlRepo="$urlSqueeze"
+elif [ "$typeOfLinux" = "ubuntu" ]
+then
+	urlRepo="$urlUbuntu"
+fi
+
+# Choice for domU
+if [ "$domu" = "" ]
+then
+    eval domu=\$$#
+    ls /dev/mapper/ | egrep "^($domu-1)$" > /dev/null
+    if [ $? -eq 1 ]
+    then
+        echo "Name of vdisk domU not valid. Not exist in /dev/mapper"
+        exit 2
+    fi
+fi
+
+echo -e "Validate this informations :\n\tTypeOfLinux : $typeOfLinux\n\tDistrib : $distrib\n\tModel : $model\n\tVerbose : $verbose\n\tLUKS : $luks\n\tDomU : $domu"
+
+sleep 2
+
+echo -n "Is it correct ? [y/N] "
+read valid
+
+if [ "$valid" != "Y" ] && [ "$valid" != "y" ]
+then
+	exit 0
+fi
+
+if [ $verbose -eq 0 ]
+then
+    mkdir -p "/var/log/citic-new-domu/"
+    out="/var/log/citic-new-domu/$domu.install.log"
+else
+    out=/dev/stdout
+fi
+
+nameVG=$domu
+if [[ $domu = *-* ]]
+then
+    nameVG=`echo "$domu" | sed 's/-/--/gi'`
+fi
+
+echo -n "Partionning vdisk"
+# Detection partition
+kpartx -a /dev/mapper/$domu-1 2>&1 1>$out
+
+sleep 3
+
+# Partitioning VDisk
+#    /boot : 300M
+#     LVM : Restant 
+if [ $luks -eq 0 ]
+then
+    if [ $isGrub1 -eq 1 ]
+    then
+        file="$base/template/fdisk_standard_grub1"
+    else
+        file="$base/template/fdisk_standard_grub2"
+    fi 
+else
+    file="$base/template/fdisk_crypt"
+fi
+fdisk -c /dev/mapper/$domu-1 2>&1 1>$out < $file
+if [ $? -gt 1 ]
+then
+	echo "Error fdisk /dev/mapper/$domu-1"
+	exit 2
+fi
+echo " done"
+echo -n "Syncing partition "
+
+# Deactive detection
+kpartx -d /dev/mapper/$domu-1 2>&1 1>$out
+
+echo -n ". "
+sleep 2
+# Activate detection
+kpartx -a /dev/mapper/$domu-1 2>&1 1>$out
+echo -n ". "
+
+sleep 2
+echo "done"
+# Create luksPartition if necessary
+if [ $luks -eq 1 ]
+then
+    modprobe aes
+    modprobe dm-crypt
+    CORE=2
+    RAM=1024
+    #(for((i=0;i<$CORE;i++)); do echo "CORE $i" >&2 ; cat /dev/urandom & done; cat /dev/random & ) |dd  of=/dev/mapper/$domu-1p1 bs=$RAM
+
+    cryptsetup luksFormat -c aes -h sha1 /dev/mapper/$domu-1p2
+    if [ $? -ne 0 ]
+    then
+        echo "Error on luksFormat. Exit"
+        exit 3
+    fi
+    partition="$domu-pvcrypt"
+    cryptsetup luksOpen /dev/mapper/$domu-1p2 $partition
+    if [ $? -ne 0 ]
+    then
+        echo "Error on luksOpen. Exit"
+        exit 3
+    fi
+else
+    if [ $isGrub1 -eq 1 ]
+    then
+        partition="$domu-1p2"
+    else
+        partition="$domu-1p1"
+    fi
+fi
+
+# Create the physical group LVM
+/bin/bash -c "pvcreate /dev/mapper/$partition 2>&1 1>$out" 2>&1 1>$out
+
+# Create the volume group LVM
+echo "Create volume group vg$domu"
+/bin/bash -c "vgcreate vg$domu /dev/mapper/$partition 2>&1 1>$out" 2>&1 1>$out
+if [ $? -ne 0 ]
+then
+	echo "Error vgcreate vg$domu /dev/mapper/$partition"
+	exit 4
+fi
+# Scan volume group
+echo "Scanning LVM"
+/bin/bash -c "vgscan 2>&1 1>$out" 2>&1 1>$out
+
+# Scan logicial volume
+/bin/bash -c "lvscan 2>&1 1>$out" 2>&1 1>$out
+
+# Activate volume group
+echo "Activate vg$domu LVM" 
+/bin/bash -c "vgchange -ay vg$domu 2>&1 1>$out" 2>&1 1>$out
+
+# Create logical volume
+#    / : 3G
+#    /var : 3G
+#    /var/www : the free space
+echo "Create logical volume"
+while read fileDisk
+do
+    part=$(echo $fileDisk | cut -d ' ' -f1)
+    name=$(echo $fileDisk | cut -d ' ' -f2)
+    type=$(echo $fileDisk | cut -d ' ' -f3)
+    size=$(echo $fileDisk | cut -d ' ' -f4-)
+    chrMount=${part:0:1}
+    if [ ! "$name" = "boot" -o $isGrub2 -eq 1 ]
+    then
+        echo -ne "\t$name"
+        if [ "$name" = "boot" -a $isGrub2 -eq 1 ]
+        then
+            size="-L 300M"
+        fi
+        /bin/bash -c "lvcreate -n $name $size vg$domu 2>&1 1>$out" 2>&1 1>$out
+	if [ $? -ne 0 ]
+        then
+            echo -e "\tfailed\nError lvcreate -n $name $size vg$domu"
+            exit 5
+        fi
+        echo -ne "\tdone\n"
+    fi
+done < $disk
+
+# Deactivate virtual group
+/bin/bash -c "vgchange -an vg$domu 2>&1 1>$out" 2>&1 1>$out
+
+echo -n "Syncing partition"
+
+sleep 1
+
+# Deactive and reactive detection
+#kpartx -d /dev/mapper/$domu-1 2>&1 1>$out
+echo -n ". "
+kpartx -a /dev/mapper/$domu-1 2>&1 1>$out
+echo -n ". "
+
+sleep 1
+echo "done"
+
+# Scan volume group
+/bin/bash -c "vgscan 2>&1 1>$out" 2>&1 1>$out
+
+# Active volume group
+/bin/bash -c "vgchange -ay vg$domu 2>&1 1>$out" 2>&1 1>$out
+
+if [ $verbose -eq 0 ]
+then
+    optMkfs="-q "
+fi
+echo -n "Create filesystems for partitions :"
+while read fileDisk
+do
+    part=$(echo $fileDisk | cut -d ' ' -f1)
+    name=$(echo $fileDisk | cut -d ' ' -f2)
+    type=$(echo $fileDisk | cut -d ' ' -f3)
+    size=$(echo $fileDisk | cut -d ' ' -f4-)
+    chrMount=${part:0:1}
+    echo -ne "\n\t$name\t$type"
+    if [ "$name" = "boot" -a $isGrub1 -eq 1 ]
+    then
+	pathDisk="/dev/mapper/$domu-1p1"
+    else
+	pathDisk="/dev/mapper/vg$nameVG-$name"
+    fi
+    /bin/bash -c "mkfs.$type $optMkfs $pathDisk 2>&1 1>$out" 2>&1 1>$out
+    if [ $? -ne 0 ]
+    then
+        echo -e "\tfailed"
+        echo "Error mkfs.$type $optMkfs $pathDisk"
+        exit 6
+    fi
+    echo -ne "\tdone"
+done < $disk
+
+#Mounting partition
+echo "Mounting partition on host filesystem :"
+while read fileDisk
+do
+    part=$(echo $fileDisk | cut -d ' ' -f1)
+    name=$(echo $fileDisk | cut -d ' ' -f2)
+    type=$(echo $fileDisk | cut -d ' ' -f3)
+    size=$(echo $fileDisk | cut -d ' ' -f4-)
+    chrMount=${part:0:1}
+    if [ "$chrMount" = "/" ]
+    then
+        if [ "$name" = "boot" -a $isGrub1 -eq 1 ]
+        then
+                pathDisk="/dev/mapper/$domu-1p1"
+        else
+                pathDisk="/dev/mapper/vg$nameVG-$name"
+        fi
+        if [ ! -d "/mnt/$domu$part" ]
+        then
+             mkdir /mnt/$domu$part
+        fi
+        echo -ne "\tmounting $domu $part"
+        /bin/bash -c "mount $pathDisk /mnt/$domu$part 2>&1 1>$out" 2>&1 1>$out
+        if [ $? -ne 0 ]
+        then
+            echo -e "\tfailed"
+            echo "Error mount $pathDisk /mnt/$domu$part"
+            exit 7
+        fi
+        echo -ne "\tdone\n"
+    fi
+done < $disk
+
+# Create grub directory
+mkdir -p /mnt/$domu/boot/grub
+
+# Debootstrap a debian system
+echo -n "Debootstraping system"
+package="acl,acpid,openssh-server,lvm2,openssl,vim,less"
+if [ $luks -eq 1 ]
+then
+    package="$package,cryptsetup"
+fi
+
+if [ "$distrib" = "etch" ]
+then
+    package="$package,perl-modules"
+elif [ "$distrib" = "lucid" ]
+then
+    package="$package,perl,perl-modules"
+elif [ "$distrib" = "squeeze" ]
+then
+    package="$package,acpi-support-base"
+fi
+
+if [ "$typeOfLinux" = "debian" ]
+then
+    package="$package,dialog"
+fi
+echo -n " with package : $package"
+debootstrap --include=$package $distrib /mnt/$domu/ $urlRepo 2>&1 1>$out &
+
+pidDeboot=$!
+
+while true
+do
+	ps -p $pidDeboot > /dev/null
+	if [ $? -eq 1 ]
+	then
+		break
+	fi
+	echo -n ". "
+	sleep 5
+done
+echo "done"
+
+echo "Define minimum system configuration"
+# Copy fstab configuration
+cp $fstab /mnt/$domu/etc/fstab
+sed "s/##domu##/$nameVG/g" -i /mnt/$domu/etc/fstab
+if [ $isGrub1 -eq 1 ]
+then
+    echo -e "/dev/sda1\t/boot\text2\tdefaults\t0\t2" >> /mnt/$domu/etc/fstab
+else
+    echo -e "/dev/mapper/vg$nameVG-boot\t/boot\text2\tdefaults\t0\t2" >> /mnt/$domu/etc/fstab
+fi
+
+# Configuring boot for display on the kvm console
+if [ "$distrib" = "lucid" ]
+then
+    echo -e "# ttyS0 - getty\nstart on stopped rc RUNLEVEL=[2345]\nstop on runlevel[!2345]\n\nrespawn\nexec /sbin/getty -L 115200 ttyS0 vt102" > /mnt/$domu/etc/init/ttyS0.conf
+else
+	sed "s/#T0:23:respawn:\/sbin\/getty -L ttyS0 9600 vt100/T0:23:respawn:\/sbin\/getty -L ttyS0 115200 vt102/g" -i /mnt/$domu/etc/inittab
+fi
+
+if [ $luks -eq 1 ]
+then
+	echo "$domu-pvcrypt         /dev/sda2       none            luks,retry=1,lvm=vg$nameVG-root" >> /mnt/$domu/etc/crypttab
+fi
+
+# Copy shadow for password
+cp /etc/shadow /mnt/$domu/etc/
+
+# Mount system for chroot
+echo "Prepare chroot"
+mount --bind /dev /mnt/$domu/dev
+mkdir -p /mnt/$domu/proc
+mount -t proc none /mnt/$domu/proc
+mkdir -p /mnt/$domu/dev/pts
+touch /mnt/$domu/proc/modules
+
+echo "Set timezone to Europe/Paris"
+echo "Europe/Paris" > /mnt/$domu/etc/timezone
+
+echo "Chroot Packages : initramfs-tools udev locales ssh"
+# Chroot for install of initramfs-tools udev locales ssh
+if [ "$distrib" = "lenny" ] || [ "$distrib" = "etch" ]
+then
+	chroot /mnt/$domu/ /bin/bash -c "aptitude -o Aptitude::Cmdline::ignore-trust-violations=true install -q=5 -y initramfs-tools udev locales ssh 2>&1 1>$out" 2>&1 1>$out 
+else
+    if [ "$distrib" = "lucid" ]
+    then
+        chroot /mnt/$domu/ /bin/bash -c "apt-get -f install"    
+    fi
+    DEBIAN_FRONTEND=non-interactive chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y -q=5 lvm2 udev locales ssh 2>&1 1>$out" 2>&1 1>$out
+fi
+
+if [ $? -ne 0 ]
+then
+	echo "Error apt-get install initramfs-tools udev locales ssh"
+	exit 9
+fi
+
+echo "Prepare locales for fr_FR.UTF-8"
+
+# Configure the locale for FR
+cat <<EOF >> /mnt/$domu/etc/locale.gen
+fr_FR.UTF-8 UTF-8
+fr_FR ISO-8859-1
+fr_FR@euro ISO-8859-15
+en_US ISO-8859-1
+en_US.ISO-8859-15 ISO-8859-15
+en_US.UTF-8 UTF-8
+EOF
+
+# Generate locale with chroot
+chroot /mnt/$domu/ locale-gen
+
+if [ $? -ne 0 ]
+then
+	echo "Error locale-gen"
+	exit 10
+fi
+
+cat > /mnt/$domu/etc/kernel-img.conf << EOF &&
+do_symlinks = yes
+link_in_boot = yes
+do_initrd = yes
+EOF
+
+if [ "$distrib" = "etch" ]
+then
+	cp $base/template/console_setup_debconf /mnt/$domu/root/
+	chroot /mnt/$domu/ /bin/bash -c "debconf-copydb copydb configdb --config='Name: copydb' --config ='Driver: File' --config='Filename: /root/console_setup_debconf'"
+else
+	cp $base/template/console-setup /mnt/$domu/etc/default/
+fi
+
+echo "Packages : grub console-setup linux-image"
+# Installing of grub and kenerl image
+if [ "$distrib" = "lenny" ]
+then
+	chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y grub console-setup linux-image-2.6-amd64 2>&1 1>$out" 2>&1 1>$out
+elif [ "$distrib" = "etch" ]
+then
+	chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y grub linux-image-2.6-amd64 2>&1 1>$out" 2>&1 1>$out
+	chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y console-setup"
+elif [ "$distrib" = "lucid" ]
+then
+	chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y grub-pc console-setup linux-image-server 2>&1 1>$out" 2>&1 1>$out
+elif [ "$distrib" = "squeeze" ]
+then
+	DEBIAN_FRONTEND=non-interactive chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y grub2 console-setup linux-image-2.6-amd64 2>&1 1>$out" 2>&1 1>$out
+else
+	chroot /mnt/$domu/ /bin/bash -c "apt-get install --force-yes -y grub-legacy console-setup linux-image-2.6-amd64 2>&1 1>$out" 2>&1 1>$out
+fi
+if [ $? -ne 0 ]
+then
+	echo "Error : chroot /mnt/$domu/ apt-get install grub console-setup linux-image-2.6-amd64"
+	exit 9
+fi
+
+echo "Configure console"
+# Configure console
+sed '$d' -i /mnt/$domu/etc/default/console-setup
+
+# Configure Fr keymap
+cp $base/template/boottime.kmap.gz /mnt/$domu/etc/console-setup/
+md5=`md5sum $base/template/boottime.kmap.gz `
+echo "BOOTTIME_KMAP_MD5=\"$md5\"" >> /mnt/$domu/etc/default/console-setup
+
+if [ $isGrub1 -eq 1 ]
+then
+    # Setting Grub Menu
+    echo "Configure grub menu"
+    cp $base/template/menu.lst-kvm /mnt/$domu/boot/grub/menu.lst
+    distribGrub=${distrib^}
+    typeLinuxGrub=${typeOfLinux^}
+    sed "s/##domu##/$nameVG/g" -i /mnt/$domu/boot/grub/menu.lst
+    sed "s/##distrib##/$distribGrub/g" -i /mnt/$domu/boot/grub/menu.lst
+    sed "s/##typeLinux##/$typeLinuxGrub/g" -i /mnt/$domu/boot/grub/menu.lst
+
+    # Installing Grub
+    echo -n "Install grub on device "
+    cp /mnt/$domu/usr/lib/grub/x86_64-pc/* /mnt/$domu/boot/grub
+    echo "(hd0)	/dev/sda" > /mnt/$domu/boot/grub/device.map
+    if [ -h /dev/hdx ]
+    then
+	rm /dev/hdx
+    fi
+    if [ -h /dev/hdx1 ]
+    then
+	rm /dev/hdx1
+    fi
+    chroot /mnt/$domu/ ln -s /dev/mapper/$domu-1 /dev/hdx
+    chroot /mnt/$domu/ ln -s /dev/mapper/$domu-1p1 /dev/hdx1
+
+    sleep 1
+    echo -n ". "
+
+    ### Grub
+    chroot /mnt/$domu/ grub --device-map=/dev/null 2>&1 1>$out << EOF &&
+device (hd0) /dev/hdx
+root (hd0,0)
+setup (hd0)
+quit
+EOF
+    if [ $? -ne 0 ]
+    then
+	echo "Error chroot grub install on /dev/hdx"
+	exit 11
+    fi
+
+    echo -n ". "
+    ###
+
+    sleep 1
+    echo -n ". "
+    chroot /mnt/$domu/ /bin/bash -c "update-grub 2>&1 1>$out" 2>&1 1>$out
+    if [ $? -ne 0 ]
+    then
+	echo "Error chroot update-grub"
+	exit 12
+    fi
+    echo "done"
+fi
+
+if [ $isGrub2 -eq 1 ]
+then
+    echo "Modifing chroot for Grub2"
+    umount /mnt/$domu/proc
+    umount /mnt/$domu/dev
+    echo -n ". "
+    cp -a `readlink -f /dev/mapper/$domu-1` /mnt/$domu/dev/sda
+    cp -a `readlink -f /dev/mapper/$domu-1p1` /mnt/$domu/dev/sda1
+    mkdir /mnt/$domu/dev/mapper
+    echo -n ". "
+    cp -a `readlink -f /dev/mapper/vg$nameVG-root` /mnt/$domu/dev/mapper/`basename /dev/mapper/vg$nameVG-root`
+    cp -a `readlink -f /dev/mapper/vg$nameVG-boot` /mnt/$domu/dev/mapper/`basename /dev/mapper/vg$nameVG-boot`
+    echo "done"
+    ### Installing and configuring Grub2
+    echo "Installing grub2"
+    echo -n ". "
+    chroot /mnt/$domu/ /bin/bash -c "grub-mkdevicemap --no-floppy"
+    chroot /mnt/$domu/ /bin/bash -c "grub-install --no-floppy --force /dev/sda " 2>&1 1>$out
+    if [ $? -ne 0 ]
+    then
+	echo "Error chroot grub-install --no-floppy --force /dev/sda"
+	exit 12
+    fi
+    if test -e /mnt/$domu/usr/share/grub/unicode.pf2
+    then
+        cp /mnt/$domu/usr/share/grub/unicode.pf2 /mnt/$domu/boot/grub/
+    fi
+    if test -e /mnt/$domu/usr/share/images/desktop-base/moreblue-orbit-grub.png
+    then
+        cp /mnt/$domu/usr/share/images/desktop-base/moreblue-orbit-grub.png /mnt/$domu/boot/grub/
+    fi
+    touch /mnt/$domu/boot/grub/grub.cfg
+    sleep 1
+    echo -n ". "
+    sed -ie 's/.*GRUB_TERMINAL.*/GRUB_TERMINAL=serial/' /mnt/$domu/etc/default/grub
+    sed -ie 's/.*GRUB_CMDLINE_LINUX=\"\(.*\)\"/GRUB_CMDLINE_LINUX=\"\1 rootdelay=5 console=ttyS0,115200n8\"/' /mnt/$domu/etc/default/grub
+    echo "GRUB_SERIAL_COMMAND=\"serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1\"" >> /mnt/$domu/etc/default/grub 
+    sleep 1
+    echo -n ". "
+    chroot /mnt/$domu/ /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg " 2>&1 1>$out
+    if [ $? -ne 0 ]
+    then
+	echo "Error chroot grub-mkconfig -o /boot/grub/grub.cfg"
+	exit 12
+    fi
+    echo "done"
+    echo -n "Setting root partition rw"
+    sed -ie 's/-root ro/-root rw/gi' /mnt/$domu/boot/grub/grub.cfg
+    echo " done"
+fi
+
+if [ $luks -eq 1 ]
+then
+    echo -n "Rebuild initrd.img with luks"
+echo "aes-x86_64
+dm-mod
+dm-crypt
+sha256
+sha1" >> /mnt/$domu/etc/initramfs-tools/modules
+
+    chroot /mnt/$domu/ /bin/bash -c "aptitude --with-recommends -f reinstall lvm2 2>&1 1>$out" 2>&1 1>$out
+    if [ $? -ne 0 ]
+    then
+        echo "Error aptitude reinstall lvm2"
+        exit 9
+    fi
+    #reconstruction initramfs pour luks
+    chroot /mnt/$domu/ /bin/bash -c "update-initramfs -k all -u 2>&1 1>$out" 2>&1 1>$out
+    if [ $? -ne 0 ]
+    then
+        echo "Error update-initramfs"
+        exit 13
+    fi
+    echo " done"
+fi
+
+# Install base package
+echo -e "deb http://repository.citic74.net/$typeOfLinux-citic74 $distrib main" >> /mnt/$domu/etc/apt/sources.list
+chroot /mnt/$domu/ /bin/bash -c "apt-get update; apt-get install -y --force-yes citic-domu-base" 2>&1 1>$out
+chroot /mnt/$domu /bin/bash -c "/usr/sbin/citic-init-domu.pl $domu-1" 2>&1 1>$out
+
+# Root Passwd
+echo "Modification du mot de passe : root"
+chroot /mnt/$domu/ passwd root
+if [ $? -ne 0 ]
+then
+	echo "Error chroot passwd root"
+	exit 14
+fi
+# Deactive link for grub install 
+if [ $isGrub1 -eq 1 ]
+then
+    chroot /mnt/$domu/ rm /dev/hdx
+    chroot /mnt/$domu/ rm /dev/hdx1
+    umount /mnt/$domu/proc
+    umount /mnt/$domu/dev
+elif [ $isGrub2 -eq 1 ]
+then
+    rm /mnt/$domu/dev/sda*
+    rm /mnt/$domu/dev/mapper/vg$nameVG*
+fi
+
+#echo "Modification du mot de passe : sysadm"
+#chroot /mnt/$domu/ passwd sysadm
+
+/usr/sbin/citic-umount-domu $model $domu
+
+if [ $luks -eq 1 ]
+then
+    echo "Deactivate partition,luks and LVM"
+else
+    echo "Deactivate partition and LVM"
+fi
+# Deactive volume group
+/bin/bash -c "vgchange -an vg$domu 2>&1 1>$out" 2>&1 1>$out
+
+if [ $luks -eq 1 ]
+then
+    cryptsetup luksClose $domu-pvcrypt
+    if [ $? -ne 0 ]
+    then
+        echo "Error luksClose"
+        exit 3
+    fi
+fi
+
+# Deactive detection
+kpartx -d /dev/mapper/$domu-1 2>&1 1>$out
+
+# Done
+echo "Installation $domu finished"
+exit 0

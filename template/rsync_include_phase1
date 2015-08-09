@@ -1,0 +1,9 @@
++ /*
+- /dev/sd*
+- /dev/mapper/*
+- /boot
+- /boot/*
+- /proc
+- /proc/*
+- /sys
+- /sys/*

@@ -1,0 +1,4 @@
+proc            /proc           proc    defaults        0       0
+/dev/mapper/vg##domu##-root /               ext4    defaults,errors=remount-ro 0       1
+/dev/mapper/vg##domu##-var /var            ext4    defaults        0       2
+tmpfs   /var/lib/amavis/tmp tmpfs   rw,noexec,nosuid,nodev,size=300m,mode=750,uid=105,gid=109   0   0

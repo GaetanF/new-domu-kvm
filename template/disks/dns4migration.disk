@@ -1,0 +1,2 @@
+/   root    ext4    -L 8G
+/boot	boot	ext2

@@ -1,0 +1,93 @@
+default		0
+timeout		5
+
+color cyan/blue white/blue
+
+serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1
+terminal --timeout=5 serial console
+
+
+### BEGIN AUTOMAGIC KERNELS LIST
+## lines between the AUTOMAGIC KERNELS LIST markers will be modified
+## by the debian update-grub script except for the default options below
+
+## DO NOT UNCOMMENT THEM, Just edit them to your needs
+
+## ## Start Default Options ##
+## default kernel options
+## default kernel options for automagic boot options
+## If you want special options for specific kernels use kopt_x_y_z
+## where x.y.z is kernel version. Minor versions can be omitted.
+## e.g. kopt=root=/dev/hda1 ro
+##      kopt_2_6_8=root=/dev/hdc1 ro
+##      kopt_2_6_8_2_686=root=/dev/hdc2 ro
+# kopt=root=/dev/mapper/vg##domu##-root ro console=ttyS0,115200n8
+
+## default grub root device
+## e.g. groot=(hd0,0)
+# groot=(hd0,0)
+
+## should update-grub create alternative automagic boot options
+## e.g. alternative=true
+##      alternative=false
+# alternative=true
+
+## should update-grub lock alternative automagic boot options
+## e.g. lockalternative=true
+##      lockalternative=false
+# lockalternative=false
+
+## additional options to use with the default boot option, but not with the
+## alternatives
+## e.g. defoptions=vga=791 resume=/dev/hda5
+# defoptions=
+
+## should update-grub lock old automagic boot options
+## e.g. lockold=false
+##      lockold=true
+# lockold=false
+
+## Xen hypervisor options to use with the default Xen boot option
+# xenhopt=
+
+## Xen Linux kernel options to use with the default Xen boot option
+# xenkopt=console=tty0
+
+## altoption boot targets option
+## multiple altoptions lines are allowed
+## e.g. altoptions=(extra menu suffix) extra boot options
+##      altoptions=(single-user) single
+# altoptions=(single-user mode) single
+
+## controls how many kernels should be put into the menu.lst
+## only counts the first occurence of a kernel, not the
+## alternative kernel options
+## e.g. howmany=all
+##      howmany=7
+# howmany=all
+
+## should update-grub create memtest86 boot option
+## e.g. memtest86=true
+##      memtest86=false
+# memtest86=true
+
+## should update-grub adjust the value of the default booted system
+## can be true or false
+# updatedefaultentry=false
+
+## ## End Default Options ##
+
+## title		##typeLinux## ##distrib## GNU/Linux
+## root		(hd0,0)
+## kernel		/vmlinuz root=/dev/mapper/vg##domu##-root ro console=ttyS0,115200n8
+## initrd		/initrd.img
+## savedefault
+
+## title		##typeLinux## ##distrib## GNU/Linux (single-user mode)
+## root		(hd0,0)
+## kernel		/vmlinuz root=/dev/mapper/vg##domu##-root ro single console=ttyS0,115200n8
+## initrd		/initrd.img
+## savedefault
+
+### END DEBIAN AUTOMAGIC KERNELS LIST
+

@@ -1,0 +1,110 @@
+Name: console-setup/altgr
+Template: console-setup/altgr
+Value: Right Alt
+Owners: console-setup
+
+Name: console-setup/charmap
+Template: console-setup/charmap
+Value: UTF-8
+Owners: console-setup
+Variables:
+ CHOICES = ARMSCII-8, CP1251, CP1255, CP1256, GEORGIAN-ACADEMY, GEORGIAN-PS, IBM1133, ISIRI-3342, ISO-8859-1, ISO-8859-10, ISO-8859-11, ISO-8859-13, ISO-8859-14, ISO-8859-15, ISO-8859-16, ISO-8859-2, ISO-8859-3, ISO-8859-4, ISO-8859-5, ISO-8859-6, ISO-8859-7, ISO-8859-8, ISO-8859-9, KOI8-R, KOI8-U, TIS-620, UTF-8, VISCII
+
+Name: console-setup/codeset
+Template: console-setup/codeset
+Value: # Latin1 and Latin5 - western Europe and Turkic languages
+Owners: console-setup
+
+Name: console-setup/codesetcode
+Template: console-setup/codesetcode
+Value: Lat15
+Owners: console-setup
+
+Name: console-setup/compose
+Template: console-setup/compose
+Value: No compose key
+Owners: console-setup
+
+Name: console-setup/dont_ask_layout
+Template: console-setup/dont_ask_layout
+Owners: console-setup
+
+Name: console-setup/fontface
+Template: console-setup/fontface
+Value: Terminus
+Owners: console-setup
+Variables:
+ CHOICES = Fixed, Terminus, TerminusBold, TerminusBoldVGA, VGA
+
+Name: console-setup/fontsize
+Template: console-setup/fontsize
+Value: 16
+Owners: console-setup
+
+Name: console-setup/fontsize-fb
+Template: console-setup/fontsize-fb
+Value: 16
+Owners: console-setup
+Variables:
+ CHOICES = 12x6, 14, 16, 20x10, 24x12, 28x14, 32x16
+
+Name: console-setup/fontsize-text
+Template: console-setup/fontsize-text
+Owners: console-setup
+
+Name: console-setup/layout
+Template: console-setup/layout
+Value: France
+Owners: console-setup
+Variables:
+ CHOICES = Afghanistan, Albania, Andorra, Arabic, Armenia, Azerbaijan, Bangladesh, Belarus, Belgium, Bhutan, Bosnia and Herzegovina, Brazil, Bulgaria, Cambodia, Canada, Croatia, Czechia, Denmark, Esperanto, Estonia, Faroe Islands, Finland, France, Georgia, Germany, Ghana, Greece, Hungary, Iceland, India, Iran, Ireland, Israel, Italy, Japan, Kazakhstan, Kyrgyzstan, Laos, Latin American, Latvia, Lithuania, Macedonia, Maldives, Malta, Maori, Mongolia, Myanmar, Netherlands, Norway, Pakistan, PC-98xx Series, Poland, Portugal, Romania, Russia, Serbia and Montenegro, Slovakia, Slovenia, South Africa, Spain, Sri Lanka, Sweden, Switzerland, Syria, Tajikistan, Thailand, Turkey, Ukraine, United Kingdom, U.S. English, Uzbekistan, Vietnam
+
+Name: console-setup/layoutcode
+Template: console-setup/layoutcode
+Value: fr
+Owners: console-setup
+
+Name: console-setup/model
+Template: console-setup/model
+Value: Generic 105-key (Intl) PC
+Owners: console-setup
+Variables:
+ CHOICES = A4Tech KB-21, A4Tech KBS-8, Acer AirKey V, Acer TravelMate 800, ACPI Standard, Advance Scorpius KI, Azona RF2300 wireless Internet Keyboard, Brazilian ABNT2, Brother Internet Keyboard, BTC 5090, BTC 5113RF Multimedia, BTC 5126T, BTC 9000, BTC 9000A, BTC 9001AH, Cherry Blue Line CyBo@rd, Cherry Blue Line CyBo@rd (alternate option), Cherry CyBo@rd USB-Hub, Cherry CyMotion Master Linux, Cherry CyMotion Master XPress, Chicony Internet Keyboard, Chicony KB-9885, Compaq Easy Access Keyboard, Compaq Internet Keyboard (13 keys), Compaq Internet Keyboard (18 keys), Compaq Internet Keyboard (7 keys), Compaq iPaq Keyboard, Dell, Dell 101-key PC, Dell USB Multimedia Keybard, Dexxa Wireless Desktop Keyboard, Diamond 9801 / 9802 series, DTK2000, Ennyah DKB-1008, Everex STEPnote, Generic 101-key PC, Generic 102-key (Intl) PC, Generic 104-key PC, Generic 105-key (Intl) PC, Genius Comfy KB-12e, Genius Comfy KB-16M / Genius MM Keyboard KWD-910, Genius Comfy KB-21e-Scroll, Gyration, Hewlett-Packard Internet Keyboard, Hewlett-Packard Omnibook 500 FA, Hewlett-Packard Omnibook 5xx, Hewlett-Packard Omnibook 6000/6100, Hewlett-Packard Omnibook XE3 GC, Hewlett-Packard Omnibook XE3 GF, Hewlett-Packard Omnibook XT1000, Hewlett-Packard Pavilion ZT11xx, Hewlett-Packard SK-2501 Multimedia Keyboard, Hewlett-Packard SK-2505 Internet Keyboard, Honeywell Euroboard, IBM Rapid Access, IBM Rapid Access II, IBM Rapid Access II (alternate option), IBM ThinkPad 560Z/600/600E/A22E, Japanese 106-key, Keytronic FlexPro, Laptop/notebook Compaq (eg. Armada) Laptop Keyboard, Laptop/notebook Compaq (eg. Presario) Internet Keyboard, Laptop/notebook Dell Inspiron 6xxx/8xxx, Laptop/notebook eMachines m68xx, Logitech Access Keyboard, Logitech Cordless Desktop, Logitech Cordless Desktop iTouch, Logitech Cordless Desktop Navigator, Logitech Cordless Desktop Optical, Logitech Cordless Desktop Pro, Logitech Cordless Desktop Pro (alternate option), Logitech Cordless Desktop Pro (alternate option2), Logitech Cordless Freedom/Desktop Navigator, Logitech Deluxe Access Keyboard, Logitech Internet Keyboard, Logitech Internet Navigator Keyboard, Logitech iTouch, Logitech iTouch Cordless Keyboard (model Y-RB6), Logitech iTouch keyboard Internet Navigator, Logitech Ultra-X Keyboard, Macintosh, Macintosh Old, Memorex MX1998, Memorex MX2500 EZ-Access Keyboard, Memorex MX2750, Microsoft Internet Keyboard, Microsoft Internet Keyboard Pro Swedish, Microsoft Natural, Microsoft Natural Keyboard Pro / Microsoft Internet Keyboard Pro, Microsoft Natural Keyboard Pro OEM, Microsoft Natural Keyboard Pro USB / Microsoft Internet Keyboard Pro, Microsoft Office Keyboard, Microsoft Wireless Multimedia Keyboard 1.0A, Northgate OmniKey 101, Oretec MCK-800 MM/Internet keyboard, PC-98xx Series, Power G5, PowerPC PS/2, Propeller Voyager (KTEZ-1000), QTronix Scorpius 98N+, Samsung SDM 4500P, Samsung SDM 4510P, SILVERCREST Multimedia Wireless Keyboard, SK-1300, SK-2500, SK-6200, SK-7100, Super Power Multimedia Keyboard, SVEN Ergonomic 2500, Symplon PaceBook (tablet PC), Toshiba Satellite S3000, Trust Direct Access Keyboard, Trust Wireless Keyboard Classic, Winbook Model XP5, Yahoo! Internet Keyboard
+
+Name: console-setup/modelcode
+Template: console-setup/modelcode
+Value: pc105
+Owners: console-setup
+
+Name: console-setup/optionscode
+Template: console-setup/optionscode
+Value: lv3:ralt_switch
+Owners: console-setup
+
+Name: console-setup/switch
+Template: console-setup/switch
+Value: No temporary switch
+Owners: console-setup
+
+Name: console-setup/toggle
+Template: console-setup/toggle
+Value: No toggling
+Owners: console-setup
+
+Name: console-setup/ttys
+Template: console-setup/ttys
+Value: /dev/tty[1-6]
+Owners: console-setup
+
+Name: console-setup/variant
+Template: console-setup/variant
+Value: France - Alternative
+Owners: console-setup
+Variables:
+ CHOICES = France, France - Alternative, France - Alternative eliminate dead keys, France - Alternative Sun dead keys, France - Dvorak, France - Eliminate dead keys, France - Sun dead keys
+
+Name: console-setup/variantcode
+Template: console-setup/variantcode
+Value: latin9
+Owners: console-setup
+

@@ -1,0 +1,41 @@
+<domain type='kvm'>
+  <name>##domu##</name>
+  <memory>524288</memory>
+  <currentMemory>524288</currentMemory>
+  <vcpu>2</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <clock offset='localtime'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <features>
+    <acpi/>
+  </features>
+  <devices>
+    <emulator>/usr/bin/kvm</emulator>
+    <disk type='block' device='disk'>
+      <source dev='/dev/mapper/##domu##-1'/>
+      <target dev='sda' bus='scsi'/>
+    </disk>
+    <disk type='block' device='disk'>
+      <source dev='/dev/Local/swap_##domu##'/>
+      <target dev='sdb' bus='scsi'/>
+    </disk>
+    <interface type='network'>
+      <source network='default'/>
+      <target dev='##domu##net0'/>
+    </interface>
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target port='0'/>
+    </console>
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' listen='*' keymap='fr'/>
+  </devices>
+</domain>
+

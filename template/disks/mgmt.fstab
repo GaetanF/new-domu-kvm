@@ -1,0 +1,3 @@
+proc            /proc           proc    defaults        0       0
+/dev/mapper/vg##domu##-root /               ext4    defaults,errors=remount-ro 0       1
+/dev/mapper/vg##domu##-data /data            ext4    defaults        0       2

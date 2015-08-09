@@ -1,0 +1,3 @@
+/   root    ext4    -L 3G
+/boot	boot	ext2
+/var    var ext4    -l 100%FREE
